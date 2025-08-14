@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Real Politic
 
 A comprehensive political data analysis and visualization platform that processes legislative data from Spanish Congress and Senate, providing insights into political trends and legislative activities.
@@ -160,3 +161,6 @@ For support and questions:
 ---
 
 **Real Politic** - Making political data accessible and understandable for everyone. 
+=======
+# real-politic
+>>>>>>> 6744995f3f206e9dcfab0c712d233f0383b34a5a
