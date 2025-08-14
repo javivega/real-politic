@@ -1,0 +1,17 @@
+{
+    "mcpServers": {
+      "supabase": {
+        "command": "cmd",
+        "args": [
+          "/c",
+          "npx",
+          "-y",
+          "@supabase/mcp-server-supabase@latest",
+          "--project-ref=real-politic"
+        ],
+        "env": {
+          "SUPABASE_ACCESS_TOKEN": "sbp_57b1a79e9b7158a3e00413d4015facd1e2145c76"
+        }
+      }
+    }
+  }

@@ -1,0 +1,33 @@
+{
+  "name": "congress-xml-processor",
+  "version": "1.0.0",
+  "description": "Procesador de archivos XML del Congreso de los Diputados para extraer iniciativas parlamentarias y sus relaciones",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "process": "node index.js",
+    "test": "node test.js"
+  },
+  "keywords": [
+    "congress",
+    "xml",
+    "parliament",
+    "spain",
+    "legislation"
+  ],
+  "author": "RealPolitic",
+  "license": "MIT",
+  "dependencies": {
+    "xml2js": "^0.6.2",
+    "natural": "^6.10.4",
+    "fs-extra": "^11.2.0",
+    "@supabase/supabase-js": "^2.39.0",
+    "dotenv": "^16.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  }
+} 
