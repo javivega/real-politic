@@ -6,7 +6,19 @@
   "scripts": {
     "start": "node index.js",
     "process": "node index.js",
-    "test": "node test.js"
+    "test": "node test.js",
+    "download": "node scripts/update-congress.js",
+    "download-only": "node index.js --download-only",
+    "test-integration": "node test-integration.js",
+    "test-supabase": "node test-supabase.js",
+    "full-pipeline": "node index.js --upload-supabase",
+    "prevote": "node scripts/analyze-prevote-positions.js scripts/downloads/14082025 ./output/prevote-positions.json",
+    "test-evidence": "node test-evidence-context.js",
+    "evidence": "node scripts/build-evidence-context.js scripts/downloads/14082025 ./output/evidence-context.json",
+    "evidence:generate": "node scripts/build-evidence-context.js scripts/downloads/14082025 ./output/evidence-context.json",
+    "evidence:copy": "cp ./output/evidence-context.json ../../public/evidence-context.json",
+    "evidence:full": "npm run evidence:generate && npm run evidence:copy",
+    "evidence:test": "npm run evidence:full && npm run test-evidence"
   },
   "keywords": [
     "congress",
@@ -18,11 +30,12 @@
   "author": "RealPolitic",
   "license": "MIT",
   "dependencies": {
-    "xml2js": "^0.6.2",
-    "natural": "^6.10.4",
-    "fs-extra": "^11.2.0",
     "@supabase/supabase-js": "^2.39.0",
-    "dotenv": "^16.3.1"
+    "dotenv": "^16.6.1",
+    "fs-extra": "^11.2.0",
+    "natural": "^6.10.4",
+    "puppeteer": "^24.16.1",
+    "xml2js": "^0.6.2"
   },
   "devDependencies": {
     "@types/node": "^20.0.0"
@@ -30,4 +43,4 @@
   "engines": {
     "node": ">=16.0.0"
   }
-} 
+}

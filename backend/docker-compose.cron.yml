@@ -1,0 +1,51 @@
+# Docker Compose for Real Politic Cron Jobs
+# Run: docker-compose -f docker-compose.cron.yml up -d
+
+version: '3.8'
+
+services:
+  real-politic-cron:
+    build:
+      context: .
+      dockerfile: Dockerfile.cron
+    container_name: real-politic-cron
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - TZ=Europe/Madrid
+    env_file:
+      - .env
+    volumes:
+      - ./logs:/app/logs
+      - ./output:/app/output
+    networks:
+      - real-politic-network
+    healthcheck:
+      test: ["CMD", "node", "-e", "console.log('Health check passed')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Optional: Add a simple web interface to monitor cron status
+  cron-monitor:
+    image: nginx:alpine
+    container_name: real-politic-cron-monitor
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    volumes:
+      - ./logs:/usr/share/nginx/html/logs:ro
+      - ./monitor.html:/usr/share/nginx/html/index.html:ro
+    networks:
+      - real-politic-network
+    depends_on:
+      - real-politic-cron
+
+networks:
+  real-politic-network:
+    driver: bridge
+
+volumes:
+  logs:
+  output:

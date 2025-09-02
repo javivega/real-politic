@@ -1,41 +1,79 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { CongressService } from '../services/congressService';
+import { CongressInitiative, PoliticalParty } from '../lib/supabase';
 
 const DataScreen: React.FC = () => {
   const [dateRange, setDateRange] = useState('30d');
   const [politicalGroup, setPoliticalGroup] = useState('all');
   const [topic, setTopic] = useState('all');
+  const [loading, setLoading] = useState(true);
+  const [statistics, setStatistics] = useState<any>({
+    totalInitiatives: 0,
+    typeStats: {},
+    partyStats: [],
+    recentInitiatives: []
+  });
+  const [initiatives, setInitiatives] = useState<CongressInitiative[]>([]);
+  const [politicalParties, setPoliticalParties] = useState<PoliticalParty[]>([]);
 
-  // Mock data for charts
-  const politicalGroups = [
-    { name: 'Progressive Party', count: 45, color: 'bg-blue-500' },
-    { name: 'Conservative Union', count: 38, color: 'bg-red-500' },
-    { name: 'Green Alliance', count: 22, color: 'bg-green-500' },
-    { name: 'Business First', count: 15, color: 'bg-purple-500' },
-  ];
+  useEffect(() => {
+    loadData();
+  }, []);
 
-  const lawStats = {
-    total: 120,
-    passed: 78,
-    rejected: 23,
-    urgent: 19,
+  const loadData = async () => {
+    try {
+      setLoading(true);
+      const [stats, allInitiatives, parties] = await Promise.all([
+        CongressService.getStatistics(),
+        CongressService.getInitiatives(),
+        CongressService.getPoliticalParties()
+      ]);
+      
+      setStatistics(stats);
+      setInitiatives(allInitiatives);
+      setPoliticalParties(parties);
+    } catch (error) {
+      console.error('Error loading data:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const topicDistribution = [
-    { name: 'Education', count: 25, percentage: 21 },
-    { name: 'Healthcare', count: 22, percentage: 18 },
-    { name: 'Economy', count: 28, percentage: 23 },
-    { name: 'Environment', count: 18, percentage: 15 },
-    { name: 'Justice', count: 15, percentage: 13 },
-    { name: 'Transport', count: 12, percentage: 10 },
-  ];
+  const filteredInitiatives = initiatives.filter(initiative => {
+    if (politicalGroup !== 'all' && initiative.political_party_short_name !== politicalGroup) {
+      return false;
+    }
+    // Add more filtering logic here if needed
+    return true;
+  });
+
+  const getPartyColor = (partyShortName: string) => {
+    const party = politicalParties.find(p => p.short_name === partyShortName);
+    return party?.color || '#666666';
+  };
+
+  const getPartyName = (partyShortName: string) => {
+    const party = politicalParties.find(p => p.short_name === partyShortName);
+    return party?.name || partyShortName;
+  };
+
+  if (loading) {
+    return (
+      <div className="px-4 py-6">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-lg text-gray-600">Loading Congress data...</div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="px-4 py-6">
       {/* Header */}
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">Data & Insights</h1>
+        <h1 className="text-2xl font-bold text-gray-900 mb-2">Congress Data & Insights</h1>
         <p className="text-gray-600">
-          Understand parliamentary activity through data and statistics
+          Real-time data from the Spanish Congress of Deputies
         </p>
       </div>
 
@@ -59,120 +97,126 @@ const DataScreen: React.FC = () => {
             className="flex-1 input-field text-sm"
           >
             <option value="all">All Parties</option>
-            <option value="progressive">Progressive Party</option>
-            <option value="conservative">Conservative Union</option>
-            <option value="green">Green Alliance</option>
-            <option value="business">Business First</option>
+            {politicalParties.map((party) => (
+              <option key={party.short_name} value={party.short_name}>
+                {party.short_name}
+              </option>
+            ))}
           </select>
         </div>
-        
-        <select
-          value={topic}
-          onChange={(e) => setTopic(e.target.value)}
-          className="w-full input-field text-sm"
-        >
-          <option value="all">All Topics</option>
-          <option value="education">Education</option>
-          <option value="health">Healthcare</option>
-          <option value="economy">Economy</option>
-          <option value="environment">Environment</option>
-          <option value="justice">Justice</option>
-        </select>
       </div>
 
       {/* Key Statistics */}
       <div className="grid grid-cols-2 gap-4 mb-6">
         <div className="card text-center">
           <div className="text-2xl font-bold text-primary-600 mb-1">
-            {lawStats.total}
+            {statistics.totalInitiatives}
           </div>
           <div className="text-sm text-gray-600">Total Initiatives</div>
         </div>
         
         <div className="card text-center">
           <div className="text-2xl font-bold text-green-600 mb-1">
-            {lawStats.passed}
+            {statistics.partyStats.length}
           </div>
-          <div className="text-sm text-gray-600">Laws Passed</div>
+          <div className="text-sm text-gray-600">Active Parties</div>
         </div>
         
         <div className="card text-center">
-          <div className="text-2xl font-bold text-red-600 mb-1">
-            {lawStats.rejected}
+          <div className="text-2xl font-bold text-blue-600 mb-1">
+            {Object.keys(statistics.typeStats).length}
           </div>
-          <div className="text-sm text-gray-600">Laws Rejected</div>
+          <div className="text-sm text-gray-600">Initiative Types</div>
         </div>
         
         <div className="card text-center">
           <div className="text-2xl font-bold text-orange-600 mb-1">
-            {lawStats.urgent}
+            {initiatives.filter(i => i.tipo_tramitacion === 'urgente').length}
           </div>
-          <div className="text-sm text-gray-600">Urgent Approvals</div>
+          <div className="text-sm text-gray-600">Iniciativas Urgentes</div>
         </div>
       </div>
 
-      {/* Political Groups Chart */}
+      {/* Political Parties Chart */}
       <div className="card mb-6">
-        <h3 className="font-semibold text-gray-900 mb-4">Initiatives by Political Group</h3>
+        <h3 className="font-semibold text-gray-900 mb-4">Initiatives by Political Party</h3>
         <div className="space-y-3">
-          {politicalGroups.map((group) => (
-            <div key={group.name} className="flex items-center">
-              <div className="w-20 text-sm text-gray-600">{group.name}</div>
+          {statistics.partyStats
+            .sort((a: any, b: any) => b.count - a.count)
+            .slice(0, 10)
+            .map((party: any) => (
+            <div key={party.short_name} className="flex items-center">
+              <div className="w-32 text-sm text-gray-600 truncate">{party.name}</div>
               <div className="flex-1 mx-3">
                 <div className="bg-gray-200 rounded-full h-3">
                   <div
-                    className={`h-3 rounded-full ${group.color}`}
-                    style={{ width: `${(group.count / 120) * 100}%` }}
+                    className="h-3 rounded-full"
+                    style={{ 
+                      width: `${(party.count / statistics.totalInitiatives) * 100}%`,
+                      backgroundColor: party.color
+                    }}
                   ></div>
                 </div>
               </div>
               <div className="w-12 text-sm font-medium text-gray-900 text-right">
-                {group.count}
+                {party.count}
               </div>
             </div>
           ))}
         </div>
       </div>
 
-      {/* Topic Distribution */}
+      {/* Initiative Types Distribution */}
       <div className="card mb-6">
-        <h3 className="font-semibold text-gray-900 mb-4">Distribution by Topic</h3>
+        <h3 className="font-semibold text-gray-900 mb-4">Distribution by Initiative Type</h3>
         <div className="space-y-3">
-          {topicDistribution.map((item) => (
-            <div key={item.name} className="flex items-center justify-between">
+          {Object.entries(statistics.typeStats)
+            .sort(([,a]: any, [,b]: any) => b - a)
+            .slice(0, 8)
+            .map(([type, count]: [string, any]) => (
+            <div key={type} className="flex items-center justify-between">
               <div className="flex items-center space-x-3">
                 <div className="w-3 h-3 bg-primary-500 rounded-full"></div>
-                <span className="text-sm text-gray-700">{item.name}</span>
+                <span className="text-sm text-gray-700 truncate">{type}</span>
               </div>
               <div className="flex items-center space-x-2">
-                <span className="text-sm font-medium text-gray-900">{item.count}</span>
-                <span className="text-xs text-gray-500">({item.percentage}%)</span>
+                <span className="text-sm font-medium text-gray-900">{count}</span>
+                <span className="text-xs text-gray-500">
+                  ({Math.round((count / statistics.totalInitiatives) * 100)}%)
+                </span>
               </div>
             </div>
           ))}
         </div>
       </div>
 
-      {/* Recent Activity */}
-      <div className="card">
-        <h3 className="font-semibold text-gray-900 mb-4">Recent Activity</h3>
-        <div className="space-y-3 text-sm">
-          <div className="flex items-center space-x-3">
-            <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-            <span className="text-gray-700">Digital Education Access Act passed first reading</span>
-            <span className="text-gray-500 text-xs">2h ago</span>
+      {/* Recent Initiatives */}
+      <div className="space-y-3">
+        <h3 className="font-semibold text-gray-900">Iniciativas Recientes</h3>
+        {statistics.recentInitiatives.map((initiative: CongressInitiative, index: number) => (
+          <div key={index} className="card cursor-pointer hover:shadow-md transition-shadow duration-200">
+            <div className="flex justify-between items-start mb-2">
+              <h4 className="font-medium text-gray-900 text-sm leading-tight flex-1 pr-4">
+                {initiative.accessible_title || initiative.objeto}
+              </h4>
+              <span 
+                className="px-2 py-1 text-xs rounded-full text-white flex-shrink-0"
+                style={{ backgroundColor: getPartyColor(initiative.political_party_short_name) }}
+              >
+                {getPartyName(initiative.political_party_short_name)}
+              </span>
+            </div>
+            <div className="flex items-center justify-between text-xs text-gray-500">
+              <span>{initiative.congress_initiative_type?.replace(/_/g, ' ')}</span>
+              <span>{new Date(initiative.fecha_presentacion).toLocaleDateString('es-ES')}</span>
+            </div>
           </div>
-          <div className="flex items-center space-x-3">
-            <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-            <span className="text-gray-700">Clean Energy Transition Bill entered committee review</span>
-            <span className="text-gray-500 text-xs">1d ago</span>
-          </div>
-          <div className="flex items-center space-x-3">
-            <div className="w-2 h-2 bg-red-500 rounded-full"></div>
-            <span className="text-gray-700">Tax Reform Amendment rejected in final vote</span>
-            <span className="text-gray-500 text-xs">3d ago</span>
-          </div>
-        </div>
+        ))}
+      </div>
+
+      {/* Data Source Info */}
+      <div className="mt-6 text-center text-xs text-gray-500">
+        Data source: Spanish Congress of Deputies • Last updated: {new Date().toLocaleString()}
       </div>
     </div>
   );

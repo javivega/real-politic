@@ -35,7 +35,18 @@
     @apply bg-white rounded-xl shadow-sm border border-gray-200 p-4;
   }
   
+  .card-compact {
+    @apply bg-white rounded-xl shadow-sm border border-gray-200 p-3;
+  }
+  
   .input-field {
     @apply w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-all duration-200;
+  }
+  
+  .line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
   }
 } 

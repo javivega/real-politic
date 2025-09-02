@@ -7,6 +7,8 @@ import MainLayout from './components/MainLayout';
 import FeedScreen from './components/FeedScreen';
 import TopicsScreen from './components/TopicsScreen';
 import DataScreen from './components/DataScreen';
+import CongressInitiativesList from './components/CongressInitiativesList';
+import InitiativeDetailScreen from './components/InitiativeDetailScreen';
 import AccountScreen from './components/AccountScreen';
 import LawDetailScreen from './components/LawDetailScreen';
 import TopicDetailScreen from './components/TopicDetailScreen';
@@ -59,6 +61,8 @@ function App() {
               <Route path="/feed" element={<FeedScreen />} />
               <Route path="/topics" element={<TopicsScreen />} />
               <Route path="/data" element={<DataScreen />} />
+              <Route path="/congress" element={<CongressInitiativesList />} />
+              <Route path="/initiative/:id" element={<InitiativeDetailScreen />} />
               <Route path="/account" element={<AccountScreen />} />
               <Route path="/law/:id" element={<LawDetailScreen />} />
               <Route path="/topic/:id" element={<TopicDetailScreen />} />

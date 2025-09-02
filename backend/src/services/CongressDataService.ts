@@ -1,4 +1,6 @@
 import axios from 'axios';
+import * as fs from 'fs/promises';
+import * as path from 'path';
 import * as xml2js from 'xml2js';
 import { createClient } from '@supabase/supabase-js';
 import {
@@ -10,14 +12,13 @@ import {
   LawStage,
   LawType
 } from '../types';
+import { classifyCongressInitiative } from './StageClassifier';
 
 export class CongressDataService implements CongressDataProcessor {
   private supabase;
+  // Optional remote URLs (kept for future use). We prioritize local downloads.
   private readonly CONGRESS_API_URLS = [
-    'https://www.congreso.es/webpublica/opendata/iniciativas/ProyectosDeLey__20250812050028.xml',
-    'https://www.congreso.es/webpublica/opendata/iniciativas/ProposicionesDeLey__20250812050122.xml',
-    'https://www.congreso.es/webpublica/opendata/iniciativas/IniciativasLegislativasAprobadas__20250812050019.xml',
-    'https://www.congreso.es/webpublica/opendata/iniciativas/PropuestasDeReforma__20250812050035.xml'
+    // Disabled by default since we use local downloads
   ];
   private readonly XML_PARSER_OPTIONS = {
     explicitArray: false,
@@ -38,50 +39,90 @@ export class CongressDataService implements CongressDataProcessor {
 
   async fetchData(): Promise<CongressInitiative[]> {
     try {
-      console.log('Fetching data from Spanish Congress API...');
-      
-      let allInitiatives: CongressInitiative[] = [];
-      
-      // Fetch from all endpoints and combine data
-      for (const url of this.CONGRESS_API_URLS) {
-        try {
-          console.log(`Fetching from: ${url}`);
-          
-          const response = await axios.get(url, {
-            timeout: 30000,
-            headers: {
-              'User-Agent': 'RealPolitic/1.0 (Parliament Transparency App)',
-              'Accept': 'application/xml, text/xml, */*'
-            }
-          });
+      console.log('Loading Congress data from local downloads...');
 
-          if (response.status === 200) {
-            const xmlData = response.data;
-            console.log(`✅ Successfully fetched ${xmlData.length} bytes from: ${url}`);
-            
-            // Parse this XML file
-            const initiatives = await this.parseXML(xmlData);
-            allInitiatives = allInitiatives.concat(initiatives);
-            
-            console.log(`📊 Parsed ${initiatives.length} initiatives from ${url}`);
-          }
-        } catch (error) {
-          console.log(`❌ Failed to fetch from ${url}: ${error instanceof Error ? error.message : 'Unknown error'}`);
-          continue;
-        }
+      const baseDownloadsDirEnv = process.env.CONGRESS_DOWNLOAD_DIR; // absolute or relative
+      const baseDownloadsDir = baseDownloadsDirEnv
+        ? path.resolve(baseDownloadsDirEnv)
+        : path.resolve(__dirname, '../../laws/congress/scripts/downloads');
+
+      const targetDir = await this.resolveLatestDownloadDir(baseDownloadsDir);
+      console.log(`📁 Using downloads directory: ${targetDir}`);
+
+      const xmlFiles = await this.findXmlFiles(targetDir);
+      if (xmlFiles.length === 0) {
+        throw new Error(`No XML files found under ${targetDir}`);
       }
-      
-      if (allInitiatives.length === 0) {
-        throw new Error('Failed to fetch XML data from any Congress API endpoint');
+
+      let allInitiatives: CongressInitiative[] = [];
+      for (const file of xmlFiles) {
+        try {
+          const data = await fs.readFile(file, 'utf8');
+          const initiatives = await this.parseXML(data);
+          allInitiatives = allInitiatives.concat(initiatives);
+          console.log(`📄 Parsed ${initiatives.length} initiatives from ${path.basename(file)}`);
+        } catch (err) {
+          console.warn(`⚠️  Could not parse ${file}: ${err instanceof Error ? err.message : 'Unknown error'}`);
+        }
       }
 
       console.log(`🎯 Total initiatives collected: ${allInitiatives.length}`);
-      
       return allInitiatives;
     } catch (error) {
       console.error('Error fetching Congress data:', error);
       throw new Error(`Failed to fetch Congress data: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
+  }
+
+  private async resolveLatestDownloadDir(baseDir: string): Promise<string> {
+    try {
+      const stat = await fs.stat(baseDir);
+      if (!stat.isDirectory()) {
+        throw new Error(`${baseDir} is not a directory`);
+      }
+      // If env var points to a dated folder directly, just use it
+      const entries = await fs.readdir(baseDir, { withFileTypes: true });
+      // If baseDir contains .xml files directly, use baseDir
+      const hasXmlHere = (await Promise.all(entries.filter(e => e.isFile()).map(e => e.name)))
+        .some(name => name.toLowerCase().endsWith('.xml'));
+      if (hasXmlHere) return baseDir;
+      // Otherwise, select the most recently modified subdirectory
+      const subdirs = entries.filter(e => e.isDirectory());
+      if (subdirs.length === 0) return baseDir; // fallback
+      const withTimes = await Promise.all(
+        subdirs.map(async d => {
+          const full = path.join(baseDir, d.name);
+          const s = await fs.stat(full);
+          return { dir: full, mtime: s.mtimeMs };
+        })
+      );
+      withTimes.sort((a, b) => b.mtime - a.mtime);
+      const first = withTimes[0];
+      if (!first) {
+        return baseDir;
+      }
+      return first.dir;
+    } catch (e) {
+      console.warn('Could not resolve latest download dir, using base:', baseDir, e);
+      return baseDir;
+    }
+  }
+
+  private async findXmlFiles(dir: string): Promise<string[]> {
+    const out: string[] = [];
+    const walk = async (d: string) => {
+      const entries = await fs.readdir(d, { withFileTypes: true });
+      for (const entry of entries) {
+        const full = path.join(d, entry.name);
+        if (entry.isDirectory()) {
+          await walk(full);
+        } else if (entry.isFile() && entry.name.toLowerCase().endsWith('.xml')) {
+          out.push(full);
+        }
+      }
+    };
+    await walk(dir);
+    return out;
   }
 
   private extractXMLFromHTML(htmlData: string): string | null {
@@ -205,6 +246,25 @@ export class CongressDataService implements CongressDataProcessor {
       return 'withdrawn';
     } else {
       return 'proposed';
+    }
+  }
+
+  private classifyAndPersistStage(initiative: CongressInitiative, lawIdOrExpediente: string): void {
+    try {
+      const classification = classifyCongressInitiative(initiative);
+      // Best-effort async persist to congress_initiatives canonical fields if available
+      // Note: this service primarily writes to 'laws'; canonical fields are persisted in the Congress pipeline
+      // We keep this here as a hook for when we have the congress_initiatives row id
+      void this.supabase
+        .from('congress_initiatives')
+        .update({
+          stage: classification.stage,
+          current_step: classification.step,
+          stage_reason: classification.reason
+        })
+        .or(`num_expediente.eq.${initiative.NUMEXPEDIENTE}`);
+    } catch (e) {
+      console.warn('Stage classification failed:', e);
     }
   }
 

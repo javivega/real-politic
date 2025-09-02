@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Evidence Context Test</title>
+</head>
+<body>
+    <h1>Evidence Context Test</h1>
+    <button onclick="testEvidenceContext()">Test Evidence Context</button>
+    <div id="result"></div>
+
+    <script>
+        async function testEvidenceContext() {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = 'Testing...';
+            
+            try {
+                console.log('🔍 Testing evidence context fetch...');
+                const response = await fetch('/evidence-context.json');
+                console.log('🔍 Response status:', response.status, response.statusText);
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    console.log('🔍 Data loaded, length:', data.length);
+                    console.log('🔍 First few items:', data.slice(0, 3));
+                    
+                    // Check for specific initiative
+                    const testInitiative = data.find(item => item.initiative_id === '122/000206/0000');
+                    console.log('🔍 Test initiative found:', !!testInitiative);
+                    
+                    resultDiv.innerHTML = `
+                        <h3>✅ Success!</h3>
+                        <p>Total initiatives: ${data.length}</p>
+                        <p>Test initiative (122/000206/0000) found: ${!!testInitiative}</p>
+                        <p>First few IDs: ${data.slice(0, 5).map(item => item.initiative_id).join(', ')}</p>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <h3>❌ Error!</h3>
+                        <p>Status: ${response.status} ${response.statusText}</p>
+                    `;
+                }
+            } catch (error) {
+                console.error('🔍 Error:', error);
+                resultDiv.innerHTML = `
+                    <h3>❌ Error!</h3>
+                    <p>${error.message}</p>
+                `;
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,361 +1,550 @@
-# Procesador de XML del Congreso de los Diputados
+# Congress XML Processor
 
-Este módulo procesa archivos XML descargados del Congreso de los Diputados de España para extraer iniciativas parlamentarias y generar relaciones entre ellas.
+Procesador completo de archivos XML del Congreso de los Diputados con descarga automática, procesamiento y subida a Supabase.
 
-## 🎯 Características
+## 🚀 Características
 
-- **Procesamiento de XML**: Lee y parsea múltiples archivos XML del Congreso
-- **Extracción de datos**: Extrae campos como expediente, tipo, objeto, autor, fechas, etc.
-- **Relaciones directas**: Identifica iniciativas relacionadas y de origen
-- **Análisis de similitud**: Compara iniciativas por similitud de texto (umbral 60%)
-- **Timeline de eventos**: Extrae cronología desde el campo de tramitación
-- **Exportación JSON**: Genera archivos listos para usar en frontend
+- **📥 Descarga Automática**: Descarga automática de archivos XML más recientes
+- **🔍 Procesamiento Inteligente**: Extracción y análisis de iniciativas parlamentarias
+- **🔗 Análisis de Relaciones**: Detección automática de relaciones entre iniciativas
+- **📊 Exportación Múltiple**: Múltiples formatos de salida (JSON, CSV, etc.)
+- **☁️ Integración Supabase**: Subida automática a base de datos
+- **🔄 Pipeline Completo**: Flujo integrado desde descarga hasta base de datos
 
-## 📋 Campos extraídos
+## 📋 Pipeline Completo
 
-Para cada iniciativa se extraen los siguientes campos:
+```
+1. 📥 Descarga Automática → 2. 🔍 Procesamiento XML → 3. 📤 Exportación → 4. ☁️ Subida a Supabase
+```
 
-- `numExpediente`: Número de expediente único
-- `tipo`: Tipo de iniciativa parlamentaria
-- `objeto`: Objeto o título de la iniciativa
-- `autor`: Autor de la iniciativa
-- `fechaPresentacion`: Fecha de presentación
-- `fechaCalificacion`: Fecha de calificación
-- `iniciativasRelacionadas`: Array de expedientes relacionados
-- `iniciativasDeOrigen`: Array de expedientes de origen
-- `tramitacion`: Texto de la tramitación seguida
-- `timeline`: Array de eventos con fechas
-- `relacionesDirectas`: Array de iniciativas relacionadas
-- `similares`: Array de iniciativas similares
+## 🔍 Pipeline de Evidencia para AI
 
-## 🚀 Instalación
+```
+1. 📰 Noticias → 2. 🐦 Redes Sociales → 3. 📋 Documentos Legales → 4. 🔗 Agregación → 5. 📱 Frontend
+```
 
-1. **Instalar dependencias**:
+### Servicios de Evidencia
+
+- **NewsEvidenceService**: Búsqueda de noticias en Google News
+- **XEvidenceService**: Recopilación de posts de X.com (Twitter)
+- **LegalEvidenceService**: Extracción de documentos BOCG/DS
+- **Evidence Aggregator**: Consolidación en un solo archivo JSON
+
+## 🛠️ Instalación
+
 ```bash
+cd backend/laws/congress
 npm install
 ```
 
-2. **Verificar archivos XML**: Asegúrate de que tienes archivos XML en la carpeta `downloads/`
+## 🎯 Uso
 
-## 📖 Uso básico
-
-### Procesamiento simple
-
-```javascript
-const CongressXMLProcessor = require('./xmlProcessor');
-
-async function procesar() {
-  const processor = new CongressXMLProcessor();
-  const iniciativas = await processor.processDownloadsFolder('./downloads');
-  
-  console.log(`Se procesaron ${iniciativas.length} iniciativas`);
-  
-  // Exportar a JSON
-  await processor.exportToJSON('./output/iniciativas.json');
-}
-
-procesar();
-```
-
-### Ejecutar desde línea de comandos
+### Pipeline Completo (Recomendado)
 
 ```bash
-# Procesar con ruta por defecto
-node index.js
+# Descarga, procesa y sube a Supabase
+npm run full-pipeline
 
-# Especificar carpeta de descargas
-node index.js ./downloads
-
-# Especificar carpeta y archivo de salida
-node index.js ./downloads ./output/mis-iniciativas.json
+# O manualmente
+node index.js --upload-supabase
 ```
+
+### Solo Descarga
+
+```bash
+# Solo descarga archivos XML
+npm run download-only
+
+# O manualmente
+node index.js --download-only
+```
+
+### Solo Descarga (Script Directo)
+
+```bash
+# Usar el script de descarga directamente
+npm run download
+
+# O manualmente
+node scripts/update-congress.js
+```
+
+### Solo Procesamiento
+
+```bash
+# Procesa archivos existentes
+npm run process
+
+# O manualmente
+node index.js
+```
+
+### Solo Exportación
+
+```bash
+# Solo exporta datos procesados
+node index.js --export-only
+```
+
+### Generación de Evidencia para AI
+
+```bash
+# Generar evidencia completa (noticias, redes sociales, documentos legales)
+npm run evidence:full
+
+# Solo generar evidencia
+npm run evidence:generate
+
+# Solo copiar evidencia al frontend
+npm run evidence:copy
+
+# Generar evidencia y ejecutar pruebas
+npm run evidence:test
+```
+
+### Prueba de Integración
+
+```bash
+# Prueba completa del pipeline
+npm run test-integration
+```
+
+## ⚙️ Opciones de Línea de Comandos
+
+| Opción | Descripción | Ejemplo |
+|--------|-------------|---------|
+| `--download-only` | Solo descarga archivos XML | `node index.js --download-only` |
+| `--export-only` | Solo exporta datos procesados | `node index.js --export-only` |
+| `--upload-supabase` | Sube datos a Supabase | `node index.js --upload-supabase` |
+| `--similarity <valor>` | Umbral de similitud (0.0-1.0) | `node index.js --similarity 0.7` |
+| `--max-file-size <MB>` | Tamaño máximo de archivo | `node index.js --max-file-size 50` |
+| `--max-concurrent <num>` | Archivos concurrentes | `node index.js --max-concurrent 3` |
 
 ## 🔧 Configuración
 
-### Umbral de similitud
+### Variables de Entorno
 
-Puedes ajustar el umbral de similitud para las relaciones:
+Crear archivo `.env` en el directorio raíz:
 
-```javascript
-const processor = new CongressXMLProcessor();
-processor.similarityThreshold = 0.7; // 70% en lugar del 60% por defecto
+```env
+# Supabase (requerido para subida)
+SUPABASE_URL=https://your-project-id.supabase.co
+SUPABASE_ANON_KEY=your-anon-key-here
+
+# Opcional: Clave de servicio para operaciones de administrador
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key-here
+
+# Configuración de procesamiento
+SIMILARITY_THRESHOLD=0.6
+MAX_FILE_SIZE=100
+MAX_CONCURRENT_FILES=5
+
+# Configuración de Supabase
+SUPABASE_BATCH_SIZE=100
+SUPABASE_RETRY_ATTEMPTS=3
+SUPABASE_RETRY_DELAY=1000
 ```
 
-### Opciones del parser XML
+### Configuración de Supabase
 
-```javascript
-const processor = new CongressXMLProcessor();
-processor.parser = new xml2js.Parser({
-  explicitArray: false,
-  mergeAttrs: true,
-  normalize: true,
-  // Otras opciones...
-});
+#### 1. Crear Proyecto en Supabase
+
+1. Ve a [supabase.com](https://supabase.com) y crea una cuenta
+2. Crea un nuevo proyecto
+3. Anota la URL del proyecto y la clave anónima
+
+#### 2. Configurar Base de Datos
+
+Ejecuta el siguiente SQL en el editor SQL de Supabase:
+
+```sql
+-- Crear esquema para datos del Congreso
+CREATE SCHEMA IF NOT EXISTS congress;
+
+-- Tabla principal de iniciativas
+CREATE TABLE IF NOT EXISTS congress_initiatives (
+    id BIGSERIAL PRIMARY KEY,
+    num_expediente VARCHAR(50) UNIQUE NOT NULL,
+    tipo VARCHAR(100),
+    objeto TEXT,
+    autor VARCHAR(200),
+    fecha_presentacion DATE,
+    fecha_calificacion DATE,
+    legislatura VARCHAR(10),
+    supertipo VARCHAR(50),
+    agrupacion VARCHAR(100),
+    tipo_tramitacion VARCHAR(50),
+    resultado_tramitacion VARCHAR(100),
+    situacion_actual VARCHAR(100),
+    comision_competente VARCHAR(200),
+    plazos TEXT,
+    ponentes TEXT,
+    enlaces_bocg JSONB,
+    enlaces_ds JSONB,
+    tramitacion_texto TEXT,
+    metadata JSONB,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Tabla de relaciones entre iniciativas
+CREATE TABLE IF NOT EXISTS congress_relationships (
+    id BIGSERIAL PRIMARY KEY,
+    iniciativa_origen_id BIGINT REFERENCES congress_initiatives(id) ON DELETE CASCADE,
+    iniciativa_destino_id BIGINT REFERENCES congress_initiatives(id) ON DELETE CASCADE,
+    tipo_relacion VARCHAR(50),
+    score_similitud DECIMAL(5,4),
+    metadata JSONB,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Tabla de eventos del timeline
+CREATE TABLE IF NOT EXISTS congress_timeline_events (
+    id BIGSERIAL PRIMARY KEY,
+    iniciativa_id BIGINT REFERENCES congress_initiatives(id) ON DELETE CASCADE,
+    evento VARCHAR(200),
+    fecha_inicio DATE,
+    fecha_fin DATE,
+    descripcion TEXT,
+    metadata JSONB,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Tabla de palabras clave
+CREATE TABLE IF NOT EXISTS congress_keywords (
+    id BIGSERIAL PRIMARY KEY,
+    palabra VARCHAR(100) UNIQUE NOT NULL,
+    frecuencia INTEGER DEFAULT 1,
+    metadata JSONB,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Índices para mejorar rendimiento
+CREATE INDEX IF NOT EXISTS idx_congress_initiatives_expediente ON congress_initiatives(num_expediente);
+CREATE INDEX IF NOT EXISTS idx_congress_initiatives_tipo ON congress_initiatives(tipo);
+CREATE INDEX IF NOT EXISTS idx_congress_initiatives_autor ON congress_initiatives(autor);
+CREATE INDEX IF NOT EXISTS idx_congress_initiatives_fecha ON congress_initiatives(fecha_presentacion);
+
+CREATE INDEX IF NOT EXISTS idx_congress_relationships_origen ON congress_relationships(iniciativa_origen_id);
+CREATE INDEX IF NOT EXISTS idx_congress_relationships_destino ON congress_relationships(iniciativa_destino_id);
+CREATE INDEX IF NOT EXISTS idx_congress_relationships_tipo ON congress_relationships(tipo_relacion);
+
+CREATE INDEX IF NOT EXISTS idx_congress_timeline_iniciativa ON congress_timeline_events(iniciativa_id);
+CREATE INDEX IF NOT EXISTS idx_congress_timeline_fecha ON congress_timeline_events(fecha_inicio);
+
+-- Función para actualizar timestamp
+CREATE OR REPLACE FUNCTION update_updated_at_column()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = NOW();
+    RETURN NEW;
+END;
+$$ language 'plpgsql';
+
+-- Triggers para actualizar timestamps
+CREATE TRIGGER update_congress_initiatives_updated_at 
+    BEFORE UPDATE ON congress_initiatives 
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_congress_keywords_updated_at 
+    BEFORE UPDATE ON congress_keywords 
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 ```
 
-## 📊 Funciones de utilidad
+#### 3. Configurar Políticas RLS (Row Level Security)
 
-### Filtrado y búsqueda
+```sql
+-- Habilitar RLS en todas las tablas
+ALTER TABLE congress_initiatives ENABLE ROW LEVEL SECURITY;
+ALTER TABLE congress_relationships ENABLE ROW LEVEL SECURITY;
+ALTER TABLE congress_timeline_events ENABLE ROW LEVEL SECURITY;
+ALTER TABLE congress_keywords ENABLE ROW LEVEL SECURITY;
 
-```javascript
-const utils = require('./utils');
+-- Política para permitir lectura pública
+CREATE POLICY "Permitir lectura pública" ON congress_initiatives
+    FOR SELECT USING (true);
 
-// Filtrar por tipo
-const proyectosLey = utils.filtrarIniciativas(iniciativas, { 
-  tipo: 'Proyecto de ley' 
-});
+CREATE POLICY "Permitir lectura pública" ON congress_relationships
+    FOR SELECT USING (true);
 
-// Filtrar por autor
-const gobierno = utils.filtrarIniciativas(iniciativas, { 
-  autor: 'Gobierno' 
-});
+CREATE POLICY "Permitir lectura pública" ON congress_timeline_events
+    FOR SELECT USING (true);
 
-// Filtrar por texto
-const salud = utils.filtrarIniciativas(iniciativas, { 
-  texto: 'salud' 
-});
+CREATE POLICY "Permitir lectura pública" ON congress_keywords
+    FOR SELECT USING (true);
 
-// Filtrar por fechas
-const recientes = utils.filtrarIniciativas(iniciativas, { 
-  fechaDesde: '2024-01-01',
-  fechaHasta: '2024-12-31'
-});
+-- Política para permitir inserción/actualización desde la aplicación
+CREATE POLICY "Permitir inserción desde app" ON congress_initiatives
+    FOR INSERT WITH CHECK (true);
+
+CREATE POLICY "Permitir actualización desde app" ON congress_initiatives
+    FOR UPDATE USING (true);
+
+CREATE POLICY "Permitir inserción desde app" ON congress_relationships
+    FOR INSERT WITH CHECK (true);
+
+CREATE POLICY "Permitir inserción desde app" ON congress_timeline_events
+    FOR INSERT WITH CHECK (true);
+
+CREATE POLICY "Permitir inserción desde app" ON congress_keywords
+    FOR INSERT WITH CHECK (true);
 ```
 
-### Ordenación
+#### 4. Probar la Integración
 
-```javascript
-// Ordenar por fecha (más recientes primero)
-const ordenadas = utils.ordenarIniciativas(iniciativas, 'fechaPresentacion', 'desc');
+```bash
+# Probar solo la conexión a Supabase
+npm run test-supabase
 
-// Ordenar por tipo
-const porTipo = utils.ordenarIniciativas(iniciativas, 'tipo', 'asc');
+# Probar el pipeline completo con subida a Supabase
+npm run full-pipeline
 ```
 
-### Generación de resúmenes
+### Configuración por Defecto
 
-```javascript
-// Generar resumen para mostrar en listas
-const resumen = utils.generarResumen(iniciativa);
+- **Umbral de similitud**: 0.6 (60%)
+- **Tamaño máximo de archivo**: 100 MB
+- **Archivos concurrentes**: 5
+- **Descarga automática**: Activada por defecto
 
-// Extraer palabras clave
-const palabrasClave = utils.extraerPalabrasClave(iniciativa.objeto);
-```
-
-## 📁 Estructura de archivos
+## 📁 Estructura de Archivos
 
 ```
-congress/
-├── downloads/                    # Archivos XML descargados
-│   └── 2025-08-12/             # Carpeta por fecha
-│       ├── congress-full-ProyectosDeLey__20250812050028.xml
-│       ├── congress-full-ProposicionesDeLey__20250812050122.xml
-│       ├── congress-full-PropuestasDeReforma__20250812050035.xml
-│       └── congress-full-IniciativasLegislativasAprobadas__20250812050019.xml
-├── output/                      # Archivos de salida generados
-├── xmlProcessor.js              # Procesador principal
-├── utils.js                     # Funciones de utilidad
-├── index.js                     # Script principal
-├── example.js                   # Ejemplos de uso
-├── package.json                 # Dependencias
-└── README.md                    # Este archivo
+backend/laws/congress/
+├── scripts/
+│   ├── update-congress.js      # Script de descarga principal
+│   ├── build-evidence-context.js  # Generador de evidencia para AI
+│   ├── fetch-prevote-evidence.js  # Recopilador de evidencia X.com
+│   └── downloads/              # Archivos XML descargados
+│       └── ddmmyyyy/           # Formato de fecha (ej: 14082025)
+├── services/
+│   ├── CongressProcessingService.js  # Servicio principal
+│   ├── XmlProcessingService.js       # Procesamiento XML
+│   ├── RelationshipService.js        # Análisis de relaciones
+│   ├── ExportService.js             # Exportación
+│   ├── SupabaseService.js           # Integración Supabase
+│   ├── NewsEvidenceService.js       # Servicio de noticias
+│   ├── XEvidenceService.js          # Servicio de redes sociales
+│   └── LegalEvidenceService.js      # Servicio de documentos legales
+├── output/                     # Archivos exportados
+├── index.js                    # Script principal
+├── test-evidence-context.js    # Pruebas de evidencia
+└── test-integration.js         # Script de prueba
 ```
 
-## 🎨 Formato de salida
+## 🔍 Funcionamiento
 
-### Estructura de una iniciativa
+### 1. Descarga Automática
+
+- **URLs Conocidas**: Intenta URLs que funcionan manualmente
+- **Descubrimiento Automático**: Busca nuevas URLs con timestamps actuales
+- **Fallback Inteligente**: Si falla, usa métodos alternativos
+- **Formato de Carpeta**: `ddmmyyyy` (ej: `14082025` para 14/08/2025)
+
+### 2. Procesamiento XML
+
+- **Extracción**: Parsea archivos XML del Congreso
+- **Normalización**: Estructura datos en formato consistente
+- **Validación**: Verifica integridad de datos
+- **Análisis**: Extrae relaciones y similitudes
+
+### 3. Exportación
+
+- **JSON Completo**: Datos completos con relaciones
+- **JSON Básico**: Datos esenciales sin relaciones
+- **Gráfico**: Datos para visualización
+- **Timeline**: Cronología de eventos
+- **Estadísticas**: Métricas y distribuciones
+
+### 4. Subida a Supabase
+
+- **Iniciativas**: Tabla principal de iniciativas
+- **Relaciones**: Conexiones entre iniciativas
+- **Timeline**: Eventos cronológicos
+- **Keywords**: Palabras clave extraídas
+
+## 📊 Formato de Salida
+
+### Archivos Generados
+
+- `iniciativas-completas.json` - Datos completos con relaciones
+- `iniciativas-basicas.json` - Datos básicos sin relaciones
+- `grafo-relaciones.json` - Datos para visualización en grafo
+- `timeline-consolidado.json` - Cronología unificada
+- `estadisticas.json` - Métricas y distribuciones
+- `relaciones.json` - Solo las relaciones entre iniciativas
+
+## 🔍 Generación de Evidencia para AI
+
+### Archivos de Evidencia
+
+- `evidence-context.json` - Contexto completo para análisis AI
+- `prevote-positions.json` - Posiciones pre-voto de partidos políticos
+
+### Estructura de Evidencia
 
 ```json
 {
-  "numExpediente": "121/000001/0000",
-  "tipo": "Proyecto de ley",
-  "objeto": "Proyecto de Ley Orgánica de representación paritaria...",
-  "autor": "Gobierno",
-  "fechaPresentacion": "07/12/2023",
-  "fechaCalificacion": "12/12/2023",
-  "timeline": [
+  "initiative_id": "NUMEXPEDIENTE",
+  "news": [
     {
-      "evento": "Comisión de Igualdad",
-      "fechaInicio": "12/12/2023",
-      "fechaFin": "15/12/2023",
-      "descripcion": "Publicación desde 12/12/2023 hasta 15/12/2023"
+      "url": "https://example.com/news",
+      "title": "Título de la noticia",
+      "snippet": "Fragmento de la noticia..."
     }
   ],
-  "relacionesDirectas": [
-    {
-      "expediente": "025/000031/0000",
-      "tipo": "relacionada",
-      "iniciativa": { /* datos de la iniciativa relacionada */ }
-    }
-  ],
-  "similares": [
-    {
-      "expediente": "122/000002/0000",
-      "similitud": 0.75,
-      "iniciativa": { /* datos de la iniciativa similar */ }
-    }
-  ]
+  "x": {
+    "PSOE": [
+      {
+        "url": "https://x.com/PSOE/status/123",
+        "source": "x.com",
+        "type": "tweet"
+      }
+    ]
+  },
+  "legal": {
+    "bocg": "https://www.congreso.es/bocg/...",
+    "ds": "https://www.congreso.es/ds/..."
+  }
 }
 ```
 
-## 🔍 Análisis de similitud
+### Workflow de Generación
 
-El sistema utiliza la **distancia de Levenshtein** para calcular la similitud entre iniciativas:
+1. **Descarga de XML**: `npm run download`
+2. **Generación de Evidencia**: `npm run evidence:generate`
+3. **Copia al Frontend**: `npm run evidence:copy`
+4. **Verificación**: `npm run evidence:test`
 
-1. **Normalización**: Se eliminan acentos y se convierte a minúsculas
-2. **Cálculo**: Se calcula la distancia entre los textos del campo `objeto`
-3. **Umbral**: Solo se consideran similares las que superan el 60% de similitud
-4. **Ordenación**: Se ordenan por porcentaje de similitud descendente
+### Servicios de Evidencia
 
-## ⏰ Timeline de eventos
+#### NewsEvidenceService
+- Búsqueda automática en Google News
+- Extracción de títulos y fragmentos
+- Límite configurable de noticias por iniciativa
 
-El sistema extrae automáticamente eventos del campo `TRAMITACIONSEGUIDA`:
+#### XEvidenceService
+- Búsqueda de posts de partidos políticos
+- Recopilación vía Google Search (no requiere API)
+- Identificación automática de partidos
 
-- **Patrones detectados**: "desde X hasta Y" y "desde X"
-- **Eventos identificados**: Fases de tramitación, comisiones, plenos, etc.
-- **Fechas extraídas**: Se convierten al formato estándar DD/MM/YYYY
+#### LegalEvidenceService
+- Extracción de URLs BOCG/DS del XML
+- Búsqueda adicional de documentos oficiales
+- Generación de fragmentos legales
 
-## 📈 Estadísticas disponibles
+## 🚨 Solución de Problemas
 
-```javascript
-const stats = processor.getStats();
-console.log(stats);
-// {
-//   totalIniciativas: 150,
-//   conRelacionesDirectas: 45,
-//   conSimilares: 78,
-//   porcentajeRelaciones: "30.00",
-//   porcentajeSimilares: "52.00"
-// }
-```
-
-## 🧪 Ejemplos y pruebas
-
-### Ejecutar ejemplos
+### Error de Descarga
 
 ```bash
-node example.js
+# Verificar conectividad
+curl https://www.congreso.es/webpublica/opendata/iniciativas
+
+# Probar descarga manual
+npm run download-only
 ```
 
-### Ejemplos disponibles
-
-- **Básico**: Procesamiento simple de archivos
-- **Filtros**: Búsqueda y filtrado de iniciativas
-- **Relaciones**: Análisis de conexiones entre iniciativas
-- **Timeline**: Análisis de cronologías
-- **Exportación**: Diferentes formatos de salida
-- **Estadísticas**: Análisis cuantitativo de datos
-
-## 🔧 Personalización
-
-### Añadir nuevos campos
-
-```javascript
-// En processInitiative()
-const normalizedInitiative = {
-  // ... campos existentes ...
-  miCampo: initiative.MICAMPO || '',
-  // ... resto de campos ...
-};
-```
-
-### Modificar algoritmo de similitud
-
-```javascript
-// En calculateSimilarity()
-calculateSimilarity(text1, text2) {
-  // Implementar tu propio algoritmo aquí
-  // Por ejemplo, usar TF-IDF, cosine similarity, etc.
-}
-```
-
-### Añadir nuevos tipos de relaciones
-
-```javascript
-// En generateRelationships()
-// Añadir lógica para nuevos tipos de relaciones
-```
-
-## 🚨 Solución de problemas
-
-### Error: "Cannot find module 'xml2js'"
+### Error de Procesamiento
 
 ```bash
-npm install
+# Verificar archivos XML
+ls -la scripts/downloads/*/
+
+# Probar procesamiento solo
+node index.js --export-only
 ```
 
-### Error: "La carpeta de descargas no existe"
+### Error de Supabase
 
-Verifica que la ruta `./downloads` existe y contiene archivos XML.
+```bash
+# Verificar variables de entorno
+echo $SUPABASE_URL
+echo $SUPABASE_ANON_KEY
 
-### Error: "Not valid XML format"
-
-Los archivos XML pueden estar corruptos. Verifica que se descargaron correctamente.
-
-### Rendimiento lento
-
-Para archivos muy grandes:
-- Ajusta el umbral de similitud
-- Procesa archivos por separado
-- Usa workers para paralelizar el procesamiento
-
-## 📚 Integración con frontend
-
-### Para grafos de relaciones
-
-```javascript
-// Usar campos: relacionesDirectas, similares
-const nodes = iniciativas.map(ini => ({
-  id: ini.numExpediente,
-  label: ini.objeto.substring(0, 50),
-  tipo: ini.tipo
-}));
-
-const edges = [];
-iniciativas.forEach(ini => {
-  ini.relacionesDirectas.forEach(rel => {
-    edges.push({
-      source: ini.numExpediente,
-      target: rel.expediente,
-      type: rel.tipo
-    });
-  });
-});
+# Probar sin Supabase
+node index.js
 ```
 
-### Para líneas de tiempo
+### Error de Generación de Evidencia
 
-```javascript
-// Usar campo: timeline
-const eventos = iniciativas.flatMap(ini => 
-  ini.timeline.map(evento => ({
-    iniciativa: ini.numExpediente,
-    evento: evento.evento,
-    fechaInicio: evento.fechaInicio,
-    fechaFin: evento.fechaFin
-  }))
-);
+```bash
+# Verificar que los archivos XML existen
+ls -la scripts/downloads/*/
+
+# Probar generación de evidencia
+npm run evidence:generate
+
+# Verificar archivo de evidencia generado
+ls -la output/evidence-context.json
+
+# Probar copia al frontend
+npm run evidence:copy
+
+# Verificar archivo en frontend
+ls -la ../../public/evidence-context.json
 ```
 
-## 🤝 Contribuir
+### Error de Pruebas de Evidencia
 
-1. Fork el proyecto
-2. Crea una rama para tu feature
-3. Commit tus cambios
-4. Push a la rama
-5. Abre un Pull Request
+```bash
+# Verificar que evidence-context.json existe
+ls -la ../../public/evidence-context.json
+
+# Ejecutar pruebas de evidencia
+npm run evidence:test
+
+# Verificar logs de consola para errores
+```
+
+## 🔄 Actualización de URLs
+
+Si las URLs del Congreso cambian:
+
+1. **Verificar manualmente**: Acceder a la web del Congreso
+2. **Actualizar script**: Modificar `scripts/update-congress.js`
+3. **Probar descarga**: `npm run download-only`
+4. **Verificar pipeline**: `npm run test-integration`
+
+## 📈 Monitoreo
+
+### Logs de Procesamiento
+
+- **Descarga**: Archivos descargados y errores
+- **Procesamiento**: Iniciativas extraídas y tiempo
+- **Exportación**: Archivos generados y ubicaciones
+- **Supabase**: Estadísticas de subida y errores
+
+### Métricas de Rendimiento
+
+- **Tiempo de descarga**: Velocidad de descarga de archivos
+- **Tiempo de procesamiento**: Velocidad de análisis XML
+- **Tiempo de exportación**: Velocidad de generación de archivos
+- **Tiempo de subida**: Velocidad de subida a Supabase
+
+### Métricas de Evidencia
+
+- **Iniciativas con evidencia**: Número de iniciativas que tienen evidencia disponible
+- **Tipos de evidencia**: Distribución de noticias, redes sociales y documentos legales
+- **Tiempo de generación**: Velocidad de generación de evidencia
+- **Tamaño de archivos**: Tamaño de los archivos de evidencia generados
+
+## 🤝 Contribución
+
+1. **Fork** del repositorio
+2. **Crear** rama para feature (`git checkout -b feature/nueva-funcionalidad`)
+3. **Commit** cambios (`git commit -am 'Añadir nueva funcionalidad'`)
+4. **Push** a la rama (`git push origin feature/nueva-funcionalidad`)
+5. **Crear** Pull Request
 
 ## 📄 Licencia
 
-MIT License - ver archivo LICENSE para detalles.
+MIT License - ver archivo [LICENSE](../LICENSE) para detalles.
 
-## 📞 Soporte
+## 🆘 Soporte
 
-Para preguntas o problemas:
-- Abre un issue en GitHub
-- Consulta la documentación
-- Revisa los ejemplos en `example.js`
-
----
-
-**Desarrollado para RealPolitic** - App de transparencia parlamentaria 
+- **Issues**: Crear issue en GitHub
+- **Documentación**: Ver archivos en `/docs/`
+- **Ejemplos**: Ver archivos en `/examples/`
+- **Pruebas**: Ejecutar `npm run test-integration` 

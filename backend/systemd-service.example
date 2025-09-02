@@ -1,0 +1,34 @@
+# Real Politic Cron Service
+# Copy this file to /etc/systemd/system/real-politic-cron.service
+# Then run: sudo systemctl enable real-politic-cron && sudo systemctl start real-politic-cron
+
+[Unit]
+Description=Real Politic Congress Processing Cron Jobs
+Documentation=https://github.com/your-org/real-politic
+After=network.target postgresql.service
+Wants=postgresql.service
+
+[Service]
+Type=simple
+User=real-politic
+Group=real-politic
+WorkingDirectory=/opt/real-politic/backend
+Environment=NODE_ENV=production
+Environment=PATH=/usr/bin:/usr/local/bin
+ExecStart=/usr/bin/node cron.js
+ExecReload=/bin/kill -HUP $MAINPID
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=real-politic-cron
+
+# Security settings
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/real-politic/backend/logs
+
+[Install]
+WantedBy=multi-user.target

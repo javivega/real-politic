@@ -1,302 +1,40 @@
-# Real Politic Backend - Supabase
+# Real Politic Backend
 
-A modern, scalable backend for the Real Politic app using Supabase (PostgreSQL + Authentication + Real-time).
+Backend API for Real Politic - Parliament Transparency App using Supabase
 
-## 🚀 Why Supabase?
+## Features
 
-- **PostgreSQL Database**: Robust, scalable database with advanced features
-- **Built-in Authentication**: User management, OAuth, and JWT tokens
-- **Real-time Subscriptions**: Live updates for law changes and notifications
-- **Row Level Security**: Fine-grained access control
-- **Auto-generated APIs**: RESTful endpoints with automatic CRUD operations
-- **Edge Functions**: Serverless functions for complex business logic
-- **Dashboard**: Beautiful admin interface for data management
+- Congress data processing pipeline
+- XML parsing and analysis
+- Legislative relationship mapping
+- Supabase integration
+- Automated daily updates via cron jobs
 
-## 🛠️ Tech Stack
-
-- **Database**: PostgreSQL via Supabase
-- **Authentication**: Supabase Auth with JWT
-- **API**: Express.js with TypeScript
-- **Real-time**: WebSocket subscriptions
-- **Storage**: Supabase Storage for files
-- **Deployment**: Supabase Cloud or self-hosted
-
-## 📋 Prerequisites
-
-- Node.js 18+
-- npm or yarn
-- Supabase CLI (for local development)
-- PostgreSQL knowledge (helpful but not required)
-
-## 🚀 Quick Start
-
-### 1. Install Dependencies
+## Installation
 
 ```bash
-cd backend
 npm install
 ```
 
-### 2. Set Up Supabase
-
-#### Option A: Supabase Cloud (Recommended for production)
-
-1. Go to [supabase.com](https://supabase.com)
-2. Create a new project
-3. Get your project URL and API keys
-4. Create a `.env` file:
-
-```env
-SUPABASE_URL=your_project_url
-SUPABASE_ANON_KEY=your_anon_key
-SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
-NODE_ENV=production
-PORT=5000
-CORS_ORIGIN=https://yourdomain.com
-```
-
-#### Option B: Local Development
-
-1. Install Supabase CLI:
-```bash
-npm install -g supabase
-```
-
-2. Start local Supabase:
-```bash
-supabase start
-```
-
-3. Create `.env` file:
-```env
-SUPABASE_URL=http://localhost:54321
-SUPABASE_ANON_KEY=your_local_anon_key
-SUPABASE_SERVICE_ROLE_KEY=your_local_service_role_key
-NODE_ENV=development
-PORT=5000
-CORS_ORIGIN=http://localhost:3000
-```
-
-### 3. Set Up Database
-
-1. Apply the database schema:
-```bash
-# For local development
-supabase db reset
-
-# For production (using Supabase dashboard)
-# Copy and paste the SQL from supabase/migrations/001_initial_schema.sql
-```
-
-2. Seed the database with initial data:
-```bash
-npm run db:seed
-```
-
-### 4. Start the Server
+## Development
 
 ```bash
-# Development
 npm run dev
+```
 
-# Production
+## Production
+
+```bash
 npm run build
 npm start
 ```
 
-## 📊 Database Schema
-
-### Core Tables
-
-- **`users`**: User accounts and profiles
-- **`topics`**: Political topics and categories
-- **`laws`**: Parliamentary laws and bills
-- **`law_details`**: Detailed information about laws
-- **`law_timelines`**: Progress tracking for laws
-- **`law_parties`**: Political party positions on laws
-- **`political_parties`**: Political party information
-- **`user_topics`**: User topic preferences
-- **`user_laws`**: User law bookmarks and follows
-
-### Key Features
-
-- **Row Level Security (RLS)**: Automatic data access control
-- **Full-text Search**: PostgreSQL search capabilities
-- **JSON Fields**: Flexible data storage for preferences
-- **Automatic Timestamps**: Created/updated tracking
-- **Foreign Key Constraints**: Data integrity
-- **Indexes**: Performance optimization
-
-## 🔐 Authentication
-
-Supabase provides built-in authentication with:
-
-- Email/password signup and login
-- OAuth providers (Google, GitHub, etc.)
-- Magic link authentication
-- Phone number authentication
-- JWT token management
-- User session handling
-
-### User Management
-
-```typescript
-import { supabase } from './lib/supabase';
-
-// Sign up
-const { data, error } = await supabase.auth.signUp({
-  email: 'user@example.com',
-  password: 'password123'
-});
-
-// Sign in
-const { data, error } = await supabase.auth.signInWithPassword({
-  email: 'user@example.com',
-  password: 'password123'
-});
-
-// Sign out
-await supabase.auth.signOut();
-
-// Get current user
-const { data: { user } } = await supabase.auth.getUser();
-```
-
-## 📡 API Endpoints
-
-### Base URL
-```
-http://localhost:5000/api/v1
-```
-
-### Available Endpoints
-
-- `GET /health` - Health check
-- `GET /topics` - List all topics
-- `GET /topics/:id` - Get specific topic
-- `GET /laws` - List laws with filters
-- `GET /laws/:id` - Get specific law with details
-- `GET /parties` - List political parties
-- `GET /statistics` - Get app statistics
-
-### Example API Calls
+## Database Operations
 
 ```bash
-# Get all topics
-curl http://localhost:5000/api/v1/topics
+# Generate TypeScript types from Supabase schema
+npm run db:generate-types
 
-# Get laws with filters
-curl "http://localhost:5000/api/v1/laws?stage=debating&type=bill&page=1&limit=10"
-
-# Get specific law
-curl http://localhost:5000/api/v1/laws/law-id-here
-
-# Get statistics
-curl http://localhost:5000/api/v1/statistics
-```
-
-## 🔄 Real-time Features
-
-Supabase provides real-time subscriptions for:
-
-- Law status changes
-- New law proposals
-- User notifications
-- Topic updates
-
-```typescript
-// Subscribe to law changes
-const subscription = supabase
-  .channel('law-changes')
-  .on('postgres_changes', 
-    { event: '*', schema: 'public', table: 'laws' },
-    (payload) => {
-      console.log('Law changed:', payload);
-    }
-  )
-  .subscribe();
-```
-
-## 🗄️ Database Operations
-
-### Using Supabase Client
-
-```typescript
-import { supabase } from './lib/supabase';
-
-// Get topics
-const { data, error } = await supabase
-  .from('topics')
-  .select('*')
-  .eq('is_active', true);
-
-// Insert new law
-const { data, error } = await supabase
-  .from('laws')
-  .insert({
-    title: 'New Law',
-    description: 'Description here',
-    type: 'bill',
-    proposer: 'John Doe'
-  })
-  .select();
-
-// Update law
-const { data, error } = await supabase
-  .from('laws')
-  .update({ stage: 'voting' })
-  .eq('id', 'law-id')
-  .select();
-
-// Delete law
-const { error } = await supabase
-  .from('laws')
-  .delete()
-  .eq('id', 'law-id');
-```
-
-## 🧪 Testing
-
-```bash
-# Run tests
-npm test
-
-# Run tests with coverage
-npm run test:coverage
-
-# Run specific test file
-npm test -- --testNamePattern="topics"
-```
-
-## 🚀 Deployment
-
-### Supabase Cloud
-
-1. Push your local schema to production:
-```bash
-supabase db push --db-url your_production_db_url
-```
-
-2. Set environment variables in your hosting platform
-3. Deploy your Express server
-
-### Self-hosted
-
-1. Set up PostgreSQL database
-2. Run migration scripts
-3. Configure environment variables
-4. Deploy Express server
-
-## 📈 Monitoring & Analytics
-
-- **Supabase Dashboard**: Database metrics and usage
-- **Logs**: Server and database logs
-- **Performance**: Query performance insights
-- **Security**: Authentication and access logs
-
-## 🔧 Development Commands
-
-```bash
 # Start local Supabase
 npm run db:start
 
@@ -311,57 +49,143 @@ npm run db:migrate
 
 # Seed database
 npm run db:seed
-
-# Generate TypeScript types
-npm run db:generate-types
-
-# Development server
-npm run dev
-
-# Build for production
-npm run build
-
-# Start production server
-npm start
 ```
 
-## 🐛 Troubleshooting
+## Cron Jobs
 
-### Common Issues
+The backend includes automated daily processing of Congress data via cron jobs.
 
-1. **Database Connection Failed**
-   - Check Supabase URL and keys
-   - Verify network connectivity
-   - Check firewall settings
+### Setup
 
-2. **Authentication Errors**
-   - Verify JWT secret
-   - Check user permissions
-   - Review RLS policies
+1. **Install dependencies** (already included in package.json):
+   ```bash
+   npm install
+   ```
 
-3. **Real-time Not Working**
-   - Check WebSocket connectivity
-   - Verify channel subscriptions
-   - Review event triggers
+2. **Environment variables** - Ensure your `.env` file includes:
+   ```env
+   SUPABASE_URL=your_supabase_url
+   SUPABASE_ANON_KEY=your_supabase_anon_key
+   RUN_ON_STARTUP=false  # Set to true to run on startup for testing
+   ```
 
-### Getting Help
+### Usage
 
-- [Supabase Documentation](https://supabase.com/docs)
-- [Supabase Community](https://github.com/supabase/supabase/discussions)
-- [PostgreSQL Documentation](https://www.postgresql.org/docs/)
+**Development mode:**
+```bash
+npm run cron:dev
+```
 
-## 🤝 Contributing
+**Production mode:**
+```bash
+npm run build
+npm run cron:start
+```
+
+### Schedule
+
+- **Congress Processing**: Daily at 01:00 AM (Europe/Madrid timezone)
+- **Cron Expression**: `0 1 * * *`
+
+### What It Does
+
+The cron job automatically:
+1. Downloads latest Congress XML files
+2. Processes and analyzes legislative data
+3. Updates relationships and timelines
+4. Uploads processed data to Supabase
+5. Maintains data freshness for the application
+
+### Monitoring
+
+The cron job provides detailed logging:
+- Start/completion timestamps
+- Success/error status
+- Processing pipeline progress
+
+### Deployment Options
+
+**Option 1: Standalone Process**
+```bash
+# Run as a separate process
+npm run cron:start
+```
+
+**Option 2: System Service (Linux)**
+Create a systemd service file:
+```ini
+[Unit]
+Description=Real Politic Cron Jobs
+After=network.target
+
+[Service]
+Type=simple
+User=your_user
+WorkingDirectory=/path/to/backend
+ExecStart=/usr/bin/node cron.js
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
+```
+
+**Option 3: Docker**
+```dockerfile
+# Add to your Dockerfile
+CMD ["npm", "run", "cron:start"]
+```
+
+**Option 4: Cloud Cron Services**
+- **AWS EventBridge**: Schedule Lambda functions
+- **Google Cloud Scheduler**: HTTP endpoints
+- **Heroku Scheduler**: Add-on for dynos
+
+### Troubleshooting
+
+**Check if cron is running:**
+```bash
+ps aux | grep cron
+```
+
+**View logs:**
+```bash
+# If running as service
+journalctl -u real-politic-cron -f
+
+# If running standalone
+npm run cron:start
+```
+
+**Test manually:**
+```bash
+# Set environment variable to run on startup
+RUN_ON_STARTUP=true npm run cron:dev
+```
+
+## API Endpoints
+
+- `GET /health` - Health check
+- `GET /congress/initiatives` - List Congress initiatives
+- `POST /congress/process` - Trigger manual processing
+
+## Architecture
+
+The backend uses a service-oriented architecture:
+- **CongressProcessingService**: Main orchestration
+- **XmlProcessingService**: XML parsing and extraction
+- **RelationshipService**: Legislative relationship analysis
+- **SupabaseService**: Database integration
+- **CronService**: Automated scheduling
+
+## Contributing
 
 1. Fork the repository
 2. Create a feature branch
 3. Make your changes
-4. Add tests
+4. Add tests if applicable
 5. Submit a pull request
 
-## 📄 License
+## License
 
-This project is licensed under the MIT License.
-
----
-
-**Real Politic Backend** - Powered by Supabase and PostgreSQL for scalable, real-time parliamentary transparency. 
+MIT 

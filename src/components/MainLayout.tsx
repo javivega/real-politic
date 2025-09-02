@@ -8,7 +8,8 @@ const MainLayout: React.FC = () => {
   const navigationItems = [
     { path: '/feed', label: 'Feed', icon: '📰' },
     { path: '/topics', label: 'Topics', icon: '🏷️' },
-    { path: '/data', label: 'Data', icon: '📊' },
+    { path: '/data', label: 'Data', icon: '��' },
+    { path: '/congress', label: 'Congress', icon: '🏛️' },
     { path: '/account', label: 'Account', icon: '👤' },
   ];
 

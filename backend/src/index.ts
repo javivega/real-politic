@@ -16,7 +16,7 @@ import congressRoutes from './routes/congress';
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 4000;
 const API_VERSION = process.env.API_VERSION || 'v1';
 
 // Rate limiting
